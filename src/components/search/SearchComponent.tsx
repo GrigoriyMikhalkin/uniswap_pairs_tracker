@@ -51,6 +51,7 @@ type SearchComponentState = {
 
 class SearchComponent extends React.Component<SearchComponentProps, SearchComponentState>{
     private uniswapClient: UniswapClient;
+    private intervalID: number | undefined;
 
     constructor(props: SearchComponentProps) {
         super(props);
@@ -85,13 +86,20 @@ class SearchComponent extends React.Component<SearchComponentProps, SearchCompon
             this.state.tokenA,
             this.state.tokenB
         ).then(reserves => {
-            if (ctx.state.reservesHistory.length === 0 || (ctx.state.reservesHistory[-1].timestamp !== reserves.timestamp)) {
+            if (ctx.intervalID) {
+                clearInterval(ctx.intervalID);
+            }
+
+            if (ctx.state.reservesHistory.length === 0 ||
+                (ctx.state.reservesHistory[ctx.state.reservesHistory.length - 1].timestamp !== reserves.timestamp)) {
                 console.log("pushed");
                 ctx.state.reservesHistory.push(reserves);
                 ctx.setState({
                     reservesHistory: ctx.state.reservesHistory
                 });
             }
+
+            ctx.intervalID = setInterval(() => ctx.searchPairs(e), 5000);
         })
     }
 }

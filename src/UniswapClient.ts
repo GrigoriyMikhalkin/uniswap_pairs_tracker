@@ -32,12 +32,13 @@ class UniswapClient {
             UniswapV2PairABI, pairAddress) as any) as UniswapV2Pair;
 
         const res = await pairContract.methods.getReserves().call();
-        let reserves = {
+        let timestamp = new Date(0);
+        timestamp.setUTCSeconds(Number(res.blockTimestampLast));
+        return {
             reserveA: res.reserve0,
             reserveB: res.reserve1,
-            timestamp: res.blockTimestampLast
-        }
-        return reserves;
+            timestamp: timestamp
+        };
     }
 }
 
