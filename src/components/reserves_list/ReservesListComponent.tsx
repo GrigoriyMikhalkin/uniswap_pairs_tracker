@@ -1,25 +1,11 @@
 import React from 'react';
 import {Reserves} from "../../types/types";
-import styled from "styled-components";
+import Styled from "./ReservesListComponent.styles";
 
-const TableContainer = styled.div`
-    display: flex;
-    justify-content: center;
-`;
-
-const Table = styled.table`
-    border-spacing: 50px 10px;
-`;
-
-const TableHeader = styled.th`
-    color: rgb(255, 0, 122);
-`;
-
-const TableRow = styled.td`
-    color: palevioletred;
-`;
 
 type ReservesListComponentProps = {
+    token1Name: string
+    token2Name: string
     reserves: Reserves[]
 }
 
@@ -28,24 +14,27 @@ type ReservesListComponentState = {}
 class ReservesListComponent extends React.Component<ReservesListComponentProps, ReservesListComponentState>{
 
     render() {
-        return <TableContainer>
-            <Table>
-                <thead>
-                    <TableHeader>TokenA reserve</TableHeader>
-                    <TableHeader>TokenB reserve</TableHeader>
-                    <TableHeader>Last TX timestamp</TableHeader>
-                </thead>
-                <tbody>
-                    {this.props.reserves.map(r =>
-                        <tr>
-                            <TableRow>{r.reserveA}</TableRow>
-                            <TableRow>{r.reserveB}</TableRow>
-                            <TableRow>{r.timestamp.toISOString()}</TableRow>
-                        </tr>
-                    )}
-                </tbody>
-            </Table>
-        </TableContainer>;
+        return <Styled.TableContainer>
+            { this.props.token1Name !== '' ?
+                    <Styled.Table>
+                        <thead>
+                            <Styled.TableHeader>{this.props.token1Name} reserves</Styled.TableHeader>
+                            <Styled.TableHeader>{this.props.token2Name} reserves</Styled.TableHeader>
+                            <Styled.TableHeader>Last TX timestamp</Styled.TableHeader>
+                        </thead>
+                        <tbody>
+                            {this.props.reserves.map(r =>
+                                <tr>
+                                    <Styled.TableRow>{r.reserve1}</Styled.TableRow>
+                                    <Styled.TableRow>{r.reserve2}</Styled.TableRow>
+                                    <Styled.TableRow>{r.timestamp.toISOString()}</Styled.TableRow>
+                                </tr>
+                            )}
+                        </tbody>
+                    </Styled.Table>
+                :  <div></div>
+            }
+        </Styled.TableContainer>;
     }
 }
 

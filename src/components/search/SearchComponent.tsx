@@ -2,109 +2,109 @@ import React from 'react';
 import ReservesListComponent from "../reserves_list/ReservesListComponent";
 import UniswapClient from "../../UniswapClient";
 import {Reserves} from "../../types/types";
-import styled from 'styled-components';
+import Styled from "./SearchComponent.styles";
+import {Sync, UniswapV2Pair} from "../../contracts/UniswapV2Pair";
 
-const Input = styled.input`
-    padding: 0.5em;
-    margin: 0.5em;
-    color: palevioletred;
-    background: papayawhip;
-    border: none;
-    border-radius: 3px;
-`;
-
-const Button = styled.button`
-  color: white;
-  border: 2px solid black;
-  background: palevioletred;
-  font-size: 1em;
-  margin: 1em;
-  padding: 0.25em 1em;
-  border-radius: 3px;
-`;
-
-const InputContainer = styled.div`
-    display: flex;
-    justify-content: center;
-    margin-top: 1em;
-`;
-
-const ButtonContainer= styled.div`
-    display: flex;
-    justify-content: center;
-`;
-
-const InputLabel = styled.span`
-    margin-left: 1em;
-    margin-top: 1em;
-    margin-bottom: 1em;
-    color: rgb(255, 0, 122);
-`;
 
 type SearchComponentProps = {}
 
 type SearchComponentState = {
-    tokenA: string;
-    tokenB: string;
+    token1Addr: string;
+    token2Addr: string;
+    token1Name: string;
+    token2Name: string;
+    pairContract: UniswapV2Pair | null;
     reservesHistory: Reserves[];
 }
 
 class SearchComponent extends React.Component<SearchComponentProps, SearchComponentState>{
     private uniswapClient: UniswapClient;
-    private intervalID: number | undefined;
 
     constructor(props: SearchComponentProps) {
         super(props);
         this.state = {
-            tokenA: '',
-            tokenB: '',
+            token1Addr: '',
+            token2Addr: '',
+            token1Name: '',
+            token2Name: '',
+            pairContract: null,
             reservesHistory: []
         };
 
         this.uniswapClient = new UniswapClient();
-        this.searchPairs = this.searchPairs.bind(this);
+        this.setPair = this.setPair.bind(this);
     }
 
     render() {
         return <div>
-            <InputContainer>
-                <InputLabel>tokenA:</InputLabel>
-                <Input placeholder="Enter token name here..." onChange={e =>this.setState({tokenA: e.target.value})} type="text"/>
-                <InputLabel>tokenB:</InputLabel>
-                <Input placeholder="Enter token name here..." onChange={e =>this.setState({tokenB: e.target.value})} type="text"/>
-            </InputContainer>
-            <ButtonContainer>
-                <Button onClick={this.searchPairs}>Track</Button>
-            </ButtonContainer>
-            <ReservesListComponent reserves={this.state.reservesHistory}/>
+            <Styled.InputContainer>
+                <Styled.InputLabel>token1:</Styled.InputLabel>
+                <Styled.Input placeholder="Enter token name here..." onChange={e =>this.setState({token1Addr: e.target.value})}/>
+                <Styled.InputLabel>token2:</Styled.InputLabel>
+                <Styled.Input placeholder="Enter token name here..." onChange={e =>this.setState({token2Addr: e.target.value})}/>
+            </Styled.InputContainer>
+            <Styled.ButtonContainer>
+                <Styled.Button onClick={this.setPair}>Track</Styled.Button>
+            </Styled.ButtonContainer>
+            <ReservesListComponent token1Name={this.state.token1Name} token2Name={this.state.token2Name} reserves={this.state.reservesHistory}/>
         </div>;
     }
 
-    searchPairs(e: any) {
+    setPair(e: any) {
+        const ctx = this;
+
+        this.uniswapClient.getTokenNames(
+            this.state.token1Addr,
+            this.state.token2Addr
+        ).then(names => {
+            ctx.setState({
+                token1Name: names[0],
+                token2Name: names[1]
+            });
+        })
+
+        this.uniswapClient.getPairContract(this.state.token1Addr, this.state.token2Addr)
+            .then(pairContract => {
+                ctx.setState({pairContract: pairContract});
+                this.updatePair();
+            });
+    }
+
+    updatePair() {
+        if (this.state.pairContract === null) {
+            return
+        }
+
         const ctx = this;
         this.uniswapClient.getPairReserves(
-            this.state.tokenA,
-            this.state.tokenB
+            this.state.pairContract,
         ).then(reserves => {
-            if (ctx.intervalID) {
-                clearInterval(ctx.intervalID);
+            if (ctx.state.pairContract === null) {
+                return;
             }
 
-            if (ctx.state.reservesHistory.length === 0 ||
-                (ctx.state.reservesHistory[ctx.state.reservesHistory.length - 1].timestamp !== reserves.timestamp)) {
-                console.log("pushed");
-                ctx.state.reservesHistory.push(reserves);
-                ctx.setState({
-                    reservesHistory: ctx.state.reservesHistory
+            ctx.updateReservesHistory.bind(ctx)(reserves);
+            ctx.uniswapClient.subscribeToSyncEvent(
+                ctx.state.pairContract,
+                async (event: Sync) => {
+                    const timestamp = await ctx.uniswapClient.getBlockTimestamp(event.blockNumber);
+
+                    ctx.updateReservesHistory.bind(ctx)({
+                        reserve1: event.returnValues.reserve0,
+                        reserve2: event.returnValues.reserve1,
+                        timestamp: timestamp
+                    });
+                    console.log(event.returnValues.reserve0);
                 });
-            }
-
-            ctx.intervalID = setInterval(() => ctx.searchPairs(e), 5000);
         })
     }
-}
 
-//'0x6b175474e89094c44da98b954eedeac495271d0f'
-//'0x0d8775f648430679a709e98d2b0cb6250d2887ef'
+    updateReservesHistory(reserves: Reserves) {
+        this.state.reservesHistory.push(reserves);
+        this.setState({
+            reservesHistory: this.state.reservesHistory
+        });
+    }
+}
 
 export default SearchComponent;

@@ -1,5 +1,5 @@
 export type Reserves = {
-    reserveA: string;
-    reserveB: string;
+    reserve1: string;
+    reserve2: string;
     timestamp: Date;
 }
