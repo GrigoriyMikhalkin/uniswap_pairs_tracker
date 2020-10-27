@@ -16,14 +16,15 @@
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
     "styled-components": "^5.2.0",
-    "typescript": "~3.7.2",
+    "typescript": "^4.0.3",
     "web3": "^1.3.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "gen-contracts": "typescript --target=web3-v1 --outDir=./src/contracts ./src/abi/*.json"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -41,6 +42,6 @@
     ]
   },
   "devDependencies": {
-    "typechain": "^2.0.0"
+    "typechain": "^3.0.0"
   }
 }
